@@ -2,5 +2,13 @@
 name = "wik"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.99.1"
 
 [dependencies]
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+unwrap_used = "warn"
+dbg_macro = "warn"
