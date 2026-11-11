@@ -4,6 +4,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::Result;
+use crate::error::IoResultExt;
 
 /// Name of the directory that holds git data
 const GIT_DIR: &str = ".git";
@@ -20,16 +21,23 @@ const DEFAULT_BRANCH: &str = "main";
 ///
 /// Those 3 are required to make Git recognize a directory as a Git repository
 pub fn init(path: &Path) -> Result<PathBuf> {
-    let git_dir = std::path::absolute(path)?.join(GIT_DIR);
+    // create path
+    fs::create_dir_all(path).context("mkdir", path)?;
+
+    // create .git directory
+    let git_dir = path.join(GIT_DIR);
+    fs::create_dir_all(&git_dir).context("mkdir", &git_dir)?;
 
     // create objects & refs
-    for dir in ["objects", "refs"] {
-        fs::create_dir_all(git_dir.join(dir))?;
+    for name in ["objects", "refs"] {
+        let dir = git_dir.join(name);
+        fs::create_dir_all(&dir).context("mkdir", &dir)?;
     }
 
     // create HEAD
-    let head = format!("ref: refs/heads/{DEFAULT_BRANCH}\n");
-    fs::write(git_dir.join("HEAD"), head)?;
+    let head_path = git_dir.join("HEAD");
+    let head_content = format!("ref: refs/heads/{DEFAULT_BRANCH}\n");
+    fs::write(&head_path, head_content).context("write", &head_path)?;
 
-    Ok(fs::canonicalize(git_dir)?)
+    fs::canonicalize(&git_dir).context("resolve", &git_dir)
 }

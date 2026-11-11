@@ -35,6 +35,7 @@ fn main() -> ExitCode {
     }
 }
 
+/// Runs commands
 fn run(cli: Cli) -> wik::Result<()> {
     match cli.command {
         Command::Init { path } => {
