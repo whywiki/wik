@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
+use wik::InitOutcome;
 
 /// wik: git compatible Version Control System
 #[derive(Parser)]
@@ -38,10 +39,17 @@ fn main() -> ExitCode {
 /// Runs commands
 fn run(cli: Cli) -> wik::Result<()> {
     match cli.command {
-        Command::Init { path } => {
-            let git_dir = wik::init(&path)?;
-            println!("Initialized empty Wik repository in {}/", git_dir.display());
-        }
+        Command::Init { path } => match wik::init(&path)? {
+            InitOutcome::Created(git_dir) => {
+                println!("Initialized empty Wik repository in {}/", git_dir.display());
+            }
+            InitOutcome::Reinitialized(git_dir) => {
+                println!(
+                    "Reinitialized existing Wik repository in {}/",
+                    git_dir.display()
+                );
+            }
+        },
     }
     Ok(())
 }
