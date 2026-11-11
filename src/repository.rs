@@ -31,6 +31,14 @@ pub enum InitOutcome {
 /// - `.git/HEAD` (only if it doesn't exist yet)
 ///
 /// Those 3 are required to make Git recognize a directory as a Git repository
+///
+/// Returns [`InitOutcome::Created`] or [`InitOutcome::Reinitialized`] with
+/// absolute path of the `.git` directory
+///
+/// # Errors
+///
+/// Returns [`Error::Fs`](crate::Error::Fs) if directory cannot be created,
+/// `HEAD` cannot be written, or path cannot be resolved
 pub fn init(path: &Path) -> Result<InitOutcome> {
     // create path
     fs::create_dir_all(path).context("mkdir", path)?;
