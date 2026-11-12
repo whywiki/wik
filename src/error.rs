@@ -49,6 +49,7 @@ impl From<io::Error> for Error {
     }
 }
 
+/// Adds .context(action, path) to io::Result, so we get more info for errors
 pub(crate) trait IoResultExt<T> {
     fn context(self, action: &'static str, path: &Path) -> Result<T>;
 }
