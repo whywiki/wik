@@ -40,14 +40,7 @@ impl fmt::Display for Error {
 }
 
 // make rust treat my error as rust error
-impl std::error::Error for Error {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::Io(_) => None,
-            Self::Fs { source, .. } => Some(source),
-        }
-    }
-}
+impl std::error::Error for Error {}
 
 // we need From so ? knows how to convert io:Error to our Error
 impl From<io::Error> for Error {
