@@ -83,7 +83,7 @@ fn second_init_prints_reinitialized() {
 }
 
 #[test]
-fn failure_prints_fatal_and_exists_with_128() {
+fn failure_prints_fatal_and_exits_with_128() {
     let tmp = TempDir::new().unwrap();
     fs::write(tmp.path().join("not-a-dir"), "").unwrap();
 

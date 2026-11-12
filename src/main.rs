@@ -1,4 +1,4 @@
-//! CLI for wik. All logis lives in the lib.rs
+//! CLI for wik. All logic lives in the lib.rs
 
 use std::path::PathBuf;
 use std::process::ExitCode;

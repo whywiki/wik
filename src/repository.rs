@@ -55,7 +55,7 @@ pub fn init(path: &Path) -> Result<InitOutcome> {
 
     let git_dir = fs::canonicalize(&git_dir).context("resolve", &git_dir)?;
 
-    // create HEAD unless it alraedy exists
+    // create HEAD unless it already exists
     let head_path = git_dir.join("HEAD");
     match File::create_new(&head_path) {
         Ok(mut file) => {
