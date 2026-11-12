@@ -23,9 +23,9 @@ pub enum InitOutcome {
     Reinitialized(PathBuf),
 }
 
-/// Create a repository in `path` and returns absolute path for `.git` directory
+/// Create a repository in `path` or reinitializes an existing one.
 ///
-/// It first creates a path for .git, next it creates:
+/// It first creates a `path` itself if needed, then `.git` and inside it:
 /// - `.git/objects/`
 /// - `.git/refs/`
 /// - `.git/HEAD` (only if it doesn't exist yet)
@@ -55,7 +55,7 @@ pub fn init(path: &Path) -> Result<InitOutcome> {
 
     let git_dir = fs::canonicalize(&git_dir).context("resolve", &git_dir)?;
 
-    // create HEAD unless it alraedy exists
+    // create HEAD unless it already exists
     let head_path = git_dir.join("HEAD");
     match File::create_new(&head_path) {
         Ok(mut file) => {

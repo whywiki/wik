@@ -45,7 +45,9 @@ fn second_init_keeps_head_and_restores_missing_dirs() {
     wik::init(&repo).unwrap();
 
     let git_dir = repo.join(".git");
+
     fs::write(git_dir.join("HEAD"), "ref: refs/heads/other\n").unwrap();
+    fs::remove_dir(git_dir.join("objects")).unwrap();
 
     let outcome = wik::init(&repo).unwrap();
 

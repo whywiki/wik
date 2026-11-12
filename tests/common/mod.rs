@@ -6,7 +6,7 @@ use std::process::Command;
 /// Runs real Git with `args` inside `dir`. It asserts that the command
 /// succeeded and returns what it printed to stdout.
 ///
-/// It ignore the user and system config and it never seraches for a repo
+/// It ignore the user and system config and it never searches for a repo
 /// above `dir`
 pub fn git(dir: &Path, args: &[&str]) -> String {
     let ceiling = dir.parent().unwrap_or(dir);
@@ -14,7 +14,7 @@ pub fn git(dir: &Path, args: &[&str]) -> String {
     let output = Command::new("git")
         .args(args)
         .current_dir(dir)
-        // git ignores user cdonfigs
+        // git ignores user configs
         .env("GIT_CONFIG_NOSYSTEM", "1")
         .env("GIT_CONFIG_GLOBAL", "/dev/null")
         // git will not search for repo above this dir

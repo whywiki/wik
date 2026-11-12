@@ -7,10 +7,10 @@ use std::path::{Path, PathBuf};
 /// `wik::Error` is shared wik error type
 #[derive(Debug)]
 pub enum Error {
-    /// IO failrues like missing file, permission denied, etc
+    /// IO failures like missing file, permission denied, etc
     Io(io::Error),
 
-    /// File system `path` failrues
+    /// File system `path` failures
     Fs {
         /// What wik was doing (`"mkdir"`, `"write"`, ...)
         action: &'static str,
@@ -40,22 +40,16 @@ impl fmt::Display for Error {
 }
 
 // make rust treat my error as rust error
-impl std::error::Error for Error {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::Io(_) => None,
-            Self::Fs { source, .. } => Some(source),
-        }
-    }
-}
+impl std::error::Error for Error {}
 
-// we need From so ? knows how to convert io:Error to our Error
+// we need From so ? knows how to convert io::Error to our Error
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Self {
         Self::Io(err)
     }
 }
 
+/// Adds .context(action, path) to io::Result, so we get more info for errors
 pub(crate) trait IoResultExt<T> {
     fn context(self, action: &'static str, path: &Path) -> Result<T>;
 }
@@ -75,7 +69,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn question_mark_conversts_io_errors() {
+    fn question_mark_converts_io_errors() {
         fn read_missing() -> Result<Vec<u8>> {
             let data = std::fs::read("/bad/path")?;
             Ok(data)
