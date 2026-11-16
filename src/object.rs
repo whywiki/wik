@@ -1,6 +1,10 @@
 //! Git objects and their on-disk byte format
 
-use crate::{HashAlgorithm, ObjectId};
+use std::fs;
+use std::path::Path;
+
+use crate::error::IoResultExt;
+use crate::{HashAlgorithm, ObjectId, Result};
 
 /// Object that can be stored in the repository.
 ///
@@ -30,6 +34,18 @@ impl Object {
     pub fn id(&self, hasher: &impl HashAlgorithm) -> ObjectId {
         hasher.hash(&self.serialize())
     }
+}
+
+/// Reads the at `path` and returns the id it would have as a blob
+/// (like `git hash-object <path>`). Nothing is written to the
+/// repository.
+///
+/// # Errors
+///
+/// Returns [`Error::Fs`](crate::Error::Fs) if the file cannot be read.
+pub fn hash_file(path: &Path, hasher: &impl HashAlgorithm) -> Result<ObjectId> {
+    let content = fs::read(path).context("read", path)?;
+    Ok(Object::Blob(content).id(hasher))
 }
 
 #[cfg(test)]

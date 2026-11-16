@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
-use wik::InitOutcome;
+use wik::{InitOutcome, Sha1Crate};
 
 /// wik: git compatible Version Control System
 #[derive(Parser)]
@@ -21,6 +21,12 @@ enum Command {
         /// Directory to create the repository in
         #[arg(default_value = ".")]
         path: PathBuf,
+    },
+    /// Calculate the object id of files as blobs
+    HashObject {
+        /// Files to hash
+        #[arg(required = true)]
+        paths: Vec<PathBuf>,
     },
 }
 
@@ -50,6 +56,12 @@ fn run(cli: Cli) -> wik::Result<()> {
                 );
             }
         },
+        Command::HashObject { paths } => {
+            for path in &paths {
+                let id = wik::hash_file(path, &Sha1Crate)?;
+                println!("{id}");
+            }
+        }
     }
     Ok(())
 }

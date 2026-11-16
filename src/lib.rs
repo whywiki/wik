@@ -8,6 +8,6 @@ mod repository;
 
 pub use error::{Error, Result};
 pub use hash::{HashAlgorithm, Sha1Crate};
-pub use object::Object;
+pub use object::{Object, hash_file};
 pub use object_id::ObjectId;
 pub use repository::{InitOutcome, init};
