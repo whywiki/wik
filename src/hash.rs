@@ -7,12 +7,13 @@ use crate::ObjectId;
 /// A hash function that produces object ids.
 ///
 /// Implementations only hash bytes and they know nothing about Git.
+/// The object header (`blob 6\0`) is added by the caller before hashing.
 pub trait HashAlgorithm {
     /// Hashes `data` and returns the result as an object id
     fn hash(&self, data: &[u8]) -> ObjectId;
 }
 
-/// SHA-1 computed byt the `sha1` crate.
+/// SHA-1 computed by the `sha1` crate.
 #[derive(Debug, Clone, Copy)]
 pub struct Sha1Crate;
 

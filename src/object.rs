@@ -36,7 +36,7 @@ impl Object {
     }
 }
 
-/// Reads the at `path` and returns the id it would have as a blob
+/// Reads the file at `path` and returns the id it would have as a blob
 /// (like `git hash-object <path>`). Nothing is written to the
 /// repository.
 ///
