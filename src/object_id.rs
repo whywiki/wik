@@ -5,6 +5,7 @@ use std::fmt;
 /// the id of an object: the hash of its header and content.
 ///
 /// One variant per hash format Git supports.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ObjectId {
     /// A 20-byte SHA-1 hash
     Sha1([u8; 20]),
