@@ -1,4 +1,5 @@
 //! Hash functions that turn bytes into object ids.
+mod sha1_own;
 
 use sha1::Digest;
 
