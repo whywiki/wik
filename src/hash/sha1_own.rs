@@ -30,6 +30,31 @@ fn pad(data: &[u8]) -> Vec<u8> {
     bytes
 }
 
+/// Expands one 64-byte block into 80 number message schedule
+/// (FIPS 180-4, section 6.1.2):
+/// - the first 16 are the block itself (read 4 bytes at a time)
+/// - later one is made from 4 earlier ones
+fn schedule(block: &[u8; 64]) -> [u32; 80] {
+    let mut w = [0_u32; 80];
+
+    // round 0..15: block itself, 4 bytes each
+    for t in 0..16 {
+        w[t] = u32::from_be_bytes([
+            block[4 * t],
+            block[4 * t + 1],
+            block[4 * t + 2],
+            block[4 * t + 3],
+        ]);
+    }
+
+    // round 16..79: each made from 4 earlier numbers
+    for t in 16..80 {
+        w[t] = (w[t - 3] ^ w[t - 8] ^ w[t - 14] ^ w[t - 16]).rotate_left(1);
+    }
+
+    w
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -51,5 +76,27 @@ mod tests {
         assert!(padded[4..56].iter().all(|&byte| byte == 0));
         // 3 bytes == 24 bits as a big endian 64 bit number
         assert_eq!(&padded[56..], &24_u64.to_be_bytes());
+    }
+
+    #[test]
+    fn schedule_reads_the_block_as_16_big_endian_numbers() {
+        let block: [u8; 64] = pad(b"abc").try_into().unwrap();
+
+        let w = schedule(&block);
+
+        assert_eq!(w[0], 0x6162_6380);
+        assert!(w[1..15].iter().all(|&number| number == 0));
+        assert_eq!(w[15], 0x0000_0018);
+    }
+
+    #[test]
+    fn schedule_builds_later_numbers_from_earlier_numbers() {
+        let block: [u8; 64] = pad(b"abc").try_into().unwrap();
+
+        let w = schedule(&block);
+
+        assert_eq!(w[16], 0xC2C4_C700);
+        assert_eq!(w[17], 0);
+        assert_eq!(w[18], 0x0000_0030);
     }
 }
