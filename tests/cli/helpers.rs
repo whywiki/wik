@@ -1,5 +1,4 @@
-//! End-to-end tests. Run the real `wik` binary
-//! and check what it prints
+//! Helpers for the end-to-end tests
 
 use std::path::Path;
 use std::process::{Command, Output};

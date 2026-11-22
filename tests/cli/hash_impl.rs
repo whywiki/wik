@@ -7,7 +7,7 @@ use tempfile::TempDir;
 use crate::helpers::{stderr, stdout, wik};
 
 #[test]
-fn own_gives_the_same_ids_as_the_default() {
+fn own_gives_the_same_ids_as_crate() {
     let tmp = TempDir::new().unwrap();
     fs::write(tmp.path().join("empty"), "").unwrap();
     fs::write(tmp.path().join("hello"), "hello world\n").unwrap();
