@@ -7,7 +7,7 @@ use tempfile::TempDir;
 use crate::helpers::{stderr, stdout, wik};
 
 #[test]
-fn hash_impl_own_gives_the_same_ids_as_the_default() {
+fn own_gives_the_same_ids_as_the_default() {
     let tmp = TempDir::new().unwrap();
     fs::write(tmp.path().join("empty"), "").unwrap();
     fs::write(tmp.path().join("hello"), "hello world\n").unwrap();
@@ -23,7 +23,7 @@ fn hash_impl_own_gives_the_same_ids_as_the_default() {
 }
 
 #[test]
-fn hash_impl_can_also_come_after_the_command() {
+fn can_come_after_the_command() {
     let tmp = TempDir::new().unwrap();
     fs::write(tmp.path().join("hello"), "hello world\n").unwrap();
 
@@ -37,7 +37,7 @@ fn hash_impl_can_also_come_after_the_command() {
 }
 
 #[test]
-fn unknown_hash_impl_is_rejected() {
+fn unknown_value_is_rejected() {
     let tmp = TempDir::new().unwrap();
     fs::write(tmp.path().join("hello"), "hello world\n").unwrap();
 

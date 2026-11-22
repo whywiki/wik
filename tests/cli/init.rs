@@ -7,7 +7,7 @@ use tempfile::TempDir;
 use crate::helpers::{stderr, stdout, wik};
 
 #[test]
-fn init_prints_where_the_repo_was_created() {
+fn prints_where_the_repo_was_created() {
     let tmp = TempDir::new().unwrap();
 
     let output = wik(tmp.path(), &["init", "repo"]);
@@ -26,7 +26,7 @@ fn init_prints_where_the_repo_was_created() {
 }
 
 #[test]
-fn init_without_path_uses_current_dir() {
+fn without_path_uses_current_dir() {
     let tmp = TempDir::new().unwrap();
 
     let output = wik(tmp.path(), &["init"]);

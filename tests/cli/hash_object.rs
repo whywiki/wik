@@ -7,7 +7,7 @@ use tempfile::TempDir;
 use crate::helpers::{stderr, stdout, wik};
 
 #[test]
-fn hash_object_prints_one_id_per_file() {
+fn prints_one_id_per_file() {
     let tmp = TempDir::new().unwrap();
     fs::write(tmp.path().join("empty"), "").unwrap();
     fs::write(tmp.path().join("hello"), "hello world\n").unwrap();
@@ -23,7 +23,7 @@ fn hash_object_prints_one_id_per_file() {
 }
 
 #[test]
-fn hash_object_of_missing_file_is_fatal() {
+fn missing_file_is_fatal() {
     let tmp = TempDir::new().unwrap();
 
     let output = wik(tmp.path(), &["hash-object", "missing"]);
