@@ -6,11 +6,15 @@ use std::process::Command;
 /// Runs real Git with `args` inside `dir`. It asserts that the command
 /// succeeded and returns what it printed to stdout.
 ///
-/// It ignore the user and system config and it never searches for a repo
+/// It ignores the user and system config and it never searches for a repo
 /// above `dir`
 pub fn git(dir: &Path, args: &[&str]) -> String {
-    let ceiling = dir.parent().unwrap_or(dir);
+    git_with_ceiling(dir, args, dir.parent().unwrap_or(dir))
+}
 
+/// Like [`git`], but Git may search for a repository upward from `dir`
+/// until it reaches `ceiling` (it does not look in `ceiling` itself)
+pub fn git_with_ceiling(dir: &Path, args: &[&str], ceiling: &Path) -> String {
     let output = Command::new("git")
         .args(args)
         .current_dir(dir)
