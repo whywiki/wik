@@ -4,8 +4,8 @@ use std::fs::{self, File};
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 
-use crate::Result;
 use crate::error::IoResultExt;
+use crate::{Error, Result};
 
 /// Name of the directory that holds git data
 const GIT_DIR: &str = ".git";
@@ -69,4 +69,35 @@ pub fn init(path: &Path) -> Result<InitOutcome> {
         }
         Err(err) => Err(err).context("create", &head_path),
     }
+}
+
+/// Checks if `path` looks like a `.git` directory, meaning it has:
+/// - `HEAD`
+/// - `objects/`
+/// - `refs/`
+fn is_git_dir(path: &Path) -> bool {
+    path.join("HEAD").is_file() && path.join("objects").is_dir() && path.join("refs").is_dir()
+}
+
+/// Find `.git` directory of the repository that contains `start`.
+/// Looks in `start`, then in each parent directory (just like Git).
+///
+/// A `.git` only is valid if it has:
+/// - `HEAD`
+/// - `objects/`
+/// - `refs/`
+///
+/// # Errors
+///
+/// Returns [`Error::NotARepository`] if neither `start` nor any
+/// parent holds a repository, or [`Error::Fs`] if `start` cannot
+/// be resolved
+pub fn find_git_dir(start: &Path) -> Result<PathBuf> {
+    let start = fs::canonicalize(start).context("resolve", start)?;
+
+    start
+        .ancestors()
+        .map(|dir| dir.join(GIT_DIR))
+        .find(|git_dir| is_git_dir(git_dir))
+        .ok_or(Error::NotARepository)
 }
