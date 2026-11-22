@@ -18,6 +18,8 @@ struct Cli {
     command: Command,
 }
 
+/// Which implementation of the has function to use. The ids are the same
+/// the choice only affects how they are computed
 #[derive(Clone, Copy, ValueEnum)]
 enum HashImpl {
     /// The sha1 crate from the RustCrypto project
