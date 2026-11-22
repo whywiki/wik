@@ -1,5 +1,14 @@
 //! SHA-1 written from the specification (FIPS 180-4) without external crates
 
+/// The five starting numbers of the state fixed by the standard.
+const INITIAL_STATE: [u32; 5] = [
+    0x6745_2301,
+    0xEFCD_AB89,
+    0x98BA_DCFE,
+    0x1032_5476,
+    0xC3D2_E1F0,
+];
+
 /// Pads `data` to a whole number of 64-byte blocks:
 /// - `data`
 /// - the byte `0x80`
@@ -55,6 +64,35 @@ fn schedule(block: &[u8; 64]) -> [u32; 80] {
     w
 }
 
+/// Runs 80 rounds on copies of `state`. One round per number in `w`
+/// and returns the five boxes at the end. `state` is not changed.
+fn rounds(state: &[u32; 5], w: &[u32; 80]) -> [u32; 5] {
+    let [mut a, mut b, mut c, mut d, mut e] = *state;
+
+    for (t, &ingredient) in w.iter().enumerate() {
+        // recipe changes every 20 rounds
+        let (f, k) = match t {
+            0..=19 => ((b & c) | (!b & d), 0x5A82_7999),
+            20..=39 => (b ^ c ^ d, 0x6ED9_EBA1),
+            40..=59 => ((b & c) | (b & d) | (c & d), 0x8F1B_BCDC),
+            _ => (b ^ c ^ d, 0xCA62_C1D6),
+        };
+
+        // new number
+        let temp = a
+            .rotate_left(5)
+            .wrapping_add(f)
+            .wrapping_add(e)
+            .wrapping_add(k)
+            .wrapping_add(ingredient);
+
+        // Shift every box one to the right, new number first.
+        (a, b, c, d, e) = (temp, a, b.rotate_left(30), c, d);
+    }
+
+    [a, b, c, d, e]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -98,5 +136,23 @@ mod tests {
         assert_eq!(w[16], 0xC2C4_C700);
         assert_eq!(w[17], 0);
         assert_eq!(w[18], 0x0000_0030);
+    }
+
+    #[test]
+    fn rounds_match_the_standars_abc_example() {
+        let block: [u8; 64] = pad(b"abc").try_into().unwrap();
+
+        let boxes = rounds(&INITIAL_STATE, &schedule(&block));
+
+        assert_eq!(
+            boxes,
+            [
+                0x4254_1B35,
+                0x5738_D5E1,
+                0x2183_4873,
+                0x681E_6DF6,
+                0xD8FD_F6AD
+            ]
+        );
     }
 }
