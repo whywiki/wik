@@ -6,6 +6,7 @@ rust-version = "1.99.1"
 
 [dependencies]
 clap = { version = "4.6.7", features = ["derive"] }
+flate2 = "1.1.11"
 sha1 = "0.11.0"
 tempfile = "3.27.0"
 
