@@ -1,5 +1,7 @@
 //! SHA-1 written from the specification (FIPS 180-4) without external crates
 
+use crate::{HashAlgorithm, ObjectId};
+
 /// The five starting numbers of the state fixed by the standard.
 const INITIAL_STATE: [u32; 5] = [
     0x6745_2301,
@@ -8,6 +10,36 @@ const INITIAL_STATE: [u32; 5] = [
     0x1032_5476,
     0xC3D2_E1F0,
 ];
+
+/// SHA-1 written for wik from the specification, without external crates.
+#[derive(Debug, Clone, Copy)]
+pub struct Sha1Own;
+
+impl HashAlgorithm for Sha1Own {
+    fn hash(&self, data: &[u8]) -> ObjectId {
+        let mut state = INITIAL_STATE;
+
+        // 1: cut the message into 64-byte parts
+        let padded = pad(data);
+        let (blocks, _) = padded.as_chunks::<64>();
+
+        // 2: blend each portion into the state
+        for block in blocks {
+            let boxes = rounds(&state, &schedule(block));
+            for (number, mixed) in state.iter_mut().zip(boxes) {
+                *number = number.wrapping_add(mixed);
+            }
+        }
+
+        // 3: turn 5 number into 20 bytes
+        let mut bytes = [0_u8; 20];
+        for (four_bytes, number) in bytes.chunks_exact_mut(4).zip(state) {
+            four_bytes.copy_from_slice(&number.to_be_bytes());
+        }
+
+        ObjectId::Sha1(bytes)
+    }
+}
 
 /// Pads `data` to a whole number of 64-byte blocks:
 /// - `data`
@@ -96,6 +128,12 @@ fn rounds(state: &[u32; 5], w: &[u32; 80]) -> [u32; 5] {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Sha1Crate;
+
+    /// Hashes `data` with `Sha1Own` and returns the id as hex
+    fn sha1_hex(data: &[u8]) -> String {
+        Sha1Own.hash(data).to_string()
+    }
 
     #[test]
     fn padding_fills_whole_64_byte_blocks() {
@@ -154,5 +192,34 @@ mod tests {
                 0xD8FD_F6AD
             ]
         );
+    }
+
+    #[test]
+    fn matches_standard_test_vectors() {
+        // From the SHA-1 standard (FIPS 180-4) and its examples
+        assert_eq!(sha1_hex(b""), "da39a3ee5e6b4b0d3255bfef95601890afd80709");
+        assert_eq!(sha1_hex(b"abc"), "a9993e364706816aba3e25717850c26c9cd0d89d");
+        assert_eq!(
+            sha1_hex(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"),
+            "84983e441c3bd26ebaae4aa1f95129e5e54670f1"
+        );
+        assert_eq!(
+            sha1_hex(&vec![b'a'; 1_000_000]),
+            "34aa973cd4c4daa4f61eeb2bdbad27316534016f"
+        );
+    }
+
+    #[test]
+    fn matches_the_crate_for_every_length_up_to_300() {
+        let data: Vec<u8> = (0..300_u32).map(|i| (i * 7 + 3) as u8).collect();
+
+        for len in 0..=data.len() {
+            let input = &data[..len];
+            assert_eq!(
+                Sha1Own.hash(input),
+                Sha1Crate.hash(input),
+                "different hash for length {len}"
+            );
+        }
     }
 }
