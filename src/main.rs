@@ -20,7 +20,7 @@ struct Cli {
 
 #[derive(Clone, Copy, ValueEnum)]
 enum HashImpl {
-    /// The `sha1` crate from the RustCrypto project
+    /// The sha1 crate from the RustCrypto project
     Crate,
     /// wik own implementation
     Own,
