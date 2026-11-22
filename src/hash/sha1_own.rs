@@ -33,8 +33,9 @@ impl HashAlgorithm for Sha1Own {
 
         // 3: turn 5 numbers into 20 bytes
         let mut bytes = [0_u8; 20];
-        for (four_bytes, number) in bytes.chunks_exact_mut(4).zip(state) {
-            four_bytes.copy_from_slice(&number.to_be_bytes());
+        let (pieces, _) = bytes.as_chunks_mut::<4>();
+        for (four_bytes, number) in pieces.iter_mut().zip(state) {
+            *four_bytes = number.to_be_bytes();
         }
 
         ObjectId::Sha1(bytes)
