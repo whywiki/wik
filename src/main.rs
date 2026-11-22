@@ -3,15 +3,27 @@
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use clap::{Parser, Subcommand};
-use wik::{InitOutcome, Sha1Crate};
+use clap::{Parser, Subcommand, ValueEnum};
+use wik::{HashAlgorithm, InitOutcome, Sha1Crate, Sha1Own};
 
 /// wik: git compatible Version Control System
 #[derive(Parser)]
 #[command(version)]
 struct Cli {
+    /// Which implementation computes hashes
+    #[arg(long, global = true, value_enum, default_value_t = HashImpl::Crate)]
+    hash_impl: HashImpl,
+
     #[command(subcommand)]
     command: Command,
+}
+
+#[derive(Clone, Copy, ValueEnum)]
+enum HashImpl {
+    /// The `sha1` crate from the RustCrypto project
+    Crate,
+    /// wik own implementation
+    Own,
 }
 
 #[derive(Subcommand)]
@@ -44,6 +56,11 @@ fn main() -> ExitCode {
 
 /// Runs commands
 fn run(cli: Cli) -> wik::Result<()> {
+    let hasher: &dyn HashAlgorithm = match cli.hash_impl {
+        HashImpl::Crate => &Sha1Crate,
+        HashImpl::Own => &Sha1Own,
+    };
+
     match cli.command {
         Command::Init { path } => match wik::init(&path)? {
             InitOutcome::Created(git_dir) => {
@@ -58,7 +75,7 @@ fn run(cli: Cli) -> wik::Result<()> {
         },
         Command::HashObject { paths } => {
             for path in &paths {
-                let id = wik::hash_file(path, &Sha1Crate)?;
+                let id = wik::hash_file(path, hasher)?;
                 println!("{id}");
             }
         }
