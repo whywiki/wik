@@ -1,13 +1,11 @@
 //! Integration tests for `wik::init` (checked against real Git)
 
-mod common;
-
 use std::fs;
 
 use tempfile::TempDir;
 use wik::{Error, InitOutcome};
 
-use common::git;
+use crate::helpers::git;
 
 #[test]
 fn creates_objects_refs_head() {

@@ -1,4 +1,4 @@
-//! Helpers for the integration tests
+//! Helpers for the library integration tests
 
 use std::path::Path;
 use std::process::Command;

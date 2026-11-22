@@ -1,16 +1,14 @@
 //! Integration tests for `wik::hash_file` checked against `git hash-object`
 
-mod common;
-
 use std::fs;
 
 use tempfile::TempDir;
 use wik::{Error, Sha1Crate};
 
-use common::git;
+use crate::helpers::git;
 
 #[test]
-fn ids_match_git_hash_object() {
+fn ids_match_git() {
     let tmp = TempDir::new().unwrap();
     let every_byte: Vec<u8> = (0..=255).collect();
     let large: Vec<u8> = (0..1_000_000_u32).map(|i| (i % 251) as u8).collect();
