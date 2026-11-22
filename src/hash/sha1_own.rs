@@ -31,7 +31,7 @@ impl HashAlgorithm for Sha1Own {
             }
         }
 
-        // 3: turn 5 number into 20 bytes
+        // 3: turn 5 numbers into 20 bytes
         let mut bytes = [0_u8; 20];
         for (four_bytes, number) in bytes.chunks_exact_mut(4).zip(state) {
             four_bytes.copy_from_slice(&number.to_be_bytes());
@@ -51,7 +51,7 @@ fn pad(data: &[u8]) -> Vec<u8> {
     // (SHA-1 stores it in 8 bytes)
     let bit_length = data.len() as u64 * 8;
 
-    // convert data to bytes
+    // copy the message so we can add bytes to it
     let mut bytes: Vec<u8> = data.to_vec();
 
     // end of message marker
@@ -78,7 +78,7 @@ fn pad(data: &[u8]) -> Vec<u8> {
 fn schedule(block: &[u8; 64]) -> [u32; 80] {
     let mut w = [0_u32; 80];
 
-    // round 0..15: block itself, 4 bytes each
+    // numbers 0..15: block itself, 4 bytes each
     for t in 0..16 {
         w[t] = u32::from_be_bytes([
             block[4 * t],
@@ -88,7 +88,7 @@ fn schedule(block: &[u8; 64]) -> [u32; 80] {
         ]);
     }
 
-    // round 16..79: each made from 4 earlier numbers
+    // numbers 16..79: each made from 4 earlier numbers
     for t in 16..80 {
         w[t] = (w[t - 3] ^ w[t - 8] ^ w[t - 14] ^ w[t - 16]).rotate_left(1);
     }
@@ -177,7 +177,7 @@ mod tests {
     }
 
     #[test]
-    fn rounds_match_the_standars_abc_example() {
+    fn rounds_match_the_standards_abc_example() {
         let block: [u8; 64] = pad(b"abc").try_into().unwrap();
 
         let boxes = rounds(&INITIAL_STATE, &schedule(&block));
