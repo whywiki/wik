@@ -1,13 +1,11 @@
 //! Integration tests for `wik::hash_file` checked against `git hash-object`
 
-mod common;
-
 use std::fs;
 
 use tempfile::TempDir;
 use wik::{Error, Sha1Crate};
 
-use common::git;
+use crate::helpers::git;
 
 #[test]
 fn ids_match_git_hash_object() {
