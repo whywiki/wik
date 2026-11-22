@@ -21,6 +21,9 @@ pub enum Error {
         /// What the operating system reported
         source: io::Error,
     },
+
+    /// No repository was found in a directory or any of its parents
+    NotARepository,
 }
 
 /// `wik::Result<T>` is short for `Result<T, wik::Error>`
@@ -35,6 +38,12 @@ impl fmt::Display for Error {
                 path,
                 source,
             } => write!(f, "cannot {action} {}: {source}", path.display()),
+            Self::NotARepository => {
+                write!(
+                    f,
+                    "not a git repository (or any of the parent directories): .git"
+                )
+            }
         }
     }
 }
