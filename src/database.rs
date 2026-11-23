@@ -1,4 +1,4 @@
-//! The object database. Objects are stored inside `.git/Objects`
+//! The object database. Objects are stored inside `.git/objects`
 
 use std::fs;
 use std::io::{self, Write};
@@ -60,7 +60,9 @@ impl Database {
         }
 
         // 4. Write compressed bytes to a temp file in the same directory
-        //    so the final step is an instant rename and not a copy
+        //    so the final step is an instant rename and not a copy. If
+        //    anything fails here, the temp file is deleted when `temp`
+        //    is dropped
         fs::create_dir_all(&dir).context("mkdir", &dir)?;
         let mut temp = tempfile::Builder::new()
             .prefix("tmp_obj_")
@@ -84,7 +86,8 @@ impl Database {
     }
 }
 
-/// Compresses `data` with zlib at the fastest level
+/// Compresses `data` with zlib at the fastest level (Git default
+/// for loose objects)
 fn compress(data: &[u8]) -> Result<Vec<u8>> {
     let mut encoder = ZlibEncoder::new(Vec::new(), Compression::fast());
     encoder.write_all(data)?;
