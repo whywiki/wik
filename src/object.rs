@@ -34,6 +34,16 @@ impl Object {
     pub fn id(&self, hasher: &dyn HashAlgorithm) -> ObjectId {
         hasher.hash(&self.serialize())
     }
+
+    /// Reads the file at `path` into a blob
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Fs`](crate::Error::Fs) if the file cannot be read
+    pub fn blob_from_file(path: &Path) -> Result<Self> {
+        let content = fs::read(path).context("read", path)?;
+        Ok(Self::Blob(content))
+    }
 }
 
 /// Reads the file at `path` and returns the id it would have as a blob
@@ -44,8 +54,7 @@ impl Object {
 ///
 /// Returns [`Error::Fs`](crate::Error::Fs) if the file cannot be read.
 pub fn hash_file(path: &Path, hasher: &dyn HashAlgorithm) -> Result<ObjectId> {
-    let content = fs::read(path).context("read", path)?;
-    Ok(Object::Blob(content).id(hasher))
+    Ok(Object::blob_from_file(path)?.id(hasher))
 }
 
 #[cfg(test)]
