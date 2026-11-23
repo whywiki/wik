@@ -6,3 +6,4 @@ mod find_git_dir;
 mod hash_object;
 mod helpers;
 mod init;
+mod snapshot;
