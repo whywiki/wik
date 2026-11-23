@@ -7,8 +7,10 @@ use crate::error::IoResultExt;
 use crate::{HashAlgorithm, Result};
 
 mod id;
+mod tree;
 
 pub use id::ObjectId;
+pub use tree::{Entry, Mode, Tree};
 
 /// Object that can be stored in the repository.
 ///
@@ -17,6 +19,8 @@ pub use id::ObjectId;
 pub enum Object {
     /// The contents of one file
     Blob(Vec<u8>),
+    /// The list of entries of one directory
+    Tree(Tree),
 }
 
 impl Object {
@@ -25,6 +29,8 @@ impl Object {
     pub fn serialize(&self) -> Vec<u8> {
         let (kind, content): (&str, &[u8]) = match self {
             Self::Blob(data) => ("blob", data),
+            // new Vec lives as long as content (temp lifetime extension)
+            Self::Tree(tree) => ("tree", &tree.to_bytes()),
         };
 
         // header
