@@ -4,7 +4,11 @@ use std::fs;
 use std::path::Path;
 
 use crate::error::IoResultExt;
-use crate::{HashAlgorithm, ObjectId, Result};
+use crate::{HashAlgorithm, Result};
+
+mod id;
+
+pub use id::ObjectId;
 
 /// Object that can be stored in the repository.
 ///
