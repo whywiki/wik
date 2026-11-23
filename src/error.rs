@@ -24,6 +24,14 @@ pub enum Error {
 
     /// No repository was found in a directory or any of its parents
     NotARepository,
+
+    /// File kind in the working folder cannot be stored yet
+    Unsupported {
+        /// File
+        path: PathBuf,
+        /// What kind of file it is
+        what: &'static str,
+    },
 }
 
 /// `wik::Result<T>` is short for `Result<T, wik::Error>`
@@ -42,6 +50,13 @@ impl fmt::Display for Error {
                 write!(
                     f,
                     "not a git repository (or any of the parent directories): .git"
+                )
+            }
+            Self::Unsupported { path, what } => {
+                write!(
+                    f,
+                    "cannot store {}: {what} are not supported yet",
+                    path.display()
                 )
             }
         }
