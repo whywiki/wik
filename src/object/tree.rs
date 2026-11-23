@@ -13,6 +13,8 @@ use crate::ObjectId;
 pub enum Mode {
     /// Regular non-executable file
     File,
+    /// Regular file that may be executed
+    Executable,
 }
 
 impl Mode {
@@ -20,6 +22,7 @@ impl Mode {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::File => "100644",
+            Self::Executable => "100755",
         }
     }
 }

@@ -14,32 +14,29 @@ use crate::{Database, Entry, Error, Mode, Object, ObjectId, Result, Tree};
 ///
 /// # Errors
 ///
-/// Returns [`Error::Unsupported`] for a subfolder, and executable file,
+/// Returns [`Error::Unsupported`] for a subfolder,
 /// a symbolic link or a special file, and [`Error::Fs`] if a file cannot
 /// be read or an object cannot be written.
 pub fn snapshot(root: &Path, database: &Database) -> Result<ObjectId> {
     let mut entries: Vec<Entry> = Vec::new();
 
-    for name in list_files(root)? {
+    for (name, mode) in list_files(root)? {
         let id = database.store(&Object::blob_from_file(&root.join(&name))?)?;
-        entries.push(Entry {
-            name,
-            mode: Mode::File,
-            id,
-        });
+        entries.push(Entry { name, mode, id });
     }
 
     database.store(&Object::Tree(Tree::new(entries)))
 }
 
-/// Gives the names of the files stored in `root`, without `.git` (no ordering)
-fn list_files(root: &Path) -> Result<Vec<OsString>> {
-    let mut names: Vec<OsString> = Vec::new();
+/// The files directly in `root` without `.git` with their modes.
+/// The order is not sorted.
+fn list_files(root: &Path) -> Result<Vec<(OsString, Mode)>> {
+    let mut files: Vec<(OsString, Mode)> = Vec::new();
 
     for entry in fs::read_dir(root).context("read", root)? {
         let entry = entry.context("read", root)?;
-        let name = entry.file_name();
 
+        let name = entry.file_name();
         if name == GIT_DIR {
             continue;
         }
@@ -47,32 +44,32 @@ fn list_files(root: &Path) -> Result<Vec<OsString>> {
         // check type of file and if we support it
         let path = entry.path();
         let metadata = entry.metadata().context("read", &path)?;
-        if let Some(what) = unsupported(&metadata) {
-            return Err(Error::Unsupported { path, what });
-        }
 
-        names.push(name);
+        match file_mode(&metadata) {
+            Ok(mode) => files.push((name, mode)),
+            Err(what) => return Err(Error::Unsupported { path, what }),
+        }
     }
 
-    Ok(names)
+    Ok(files)
 }
 
-/// Check whether wik can store a file of this kind yet.
+/// Returns the tree mode for a file with this `metadata`.
 ///
-/// Returns `None` if it can or the name of the kind in plural if it can't.
-fn unsupported(metadata: &fs::Metadata) -> Option<&'static str> {
+/// If wik cannot store this kind of file yet it return its name instead
+fn file_mode(metadata: &fs::Metadata) -> Result<Mode, &'static str> {
     let file_type = metadata.file_type();
 
     if file_type.is_dir() {
-        Some("subdirectories")
+        Err("subdirectories")
     } else if file_type.is_symlink() {
-        Some("symbolic links")
+        Err("symbolic links")
     } else if !file_type.is_file() {
-        Some("special files")
+        Err("special files")
     // Git treats a file as executable if its owner may execute it
     } else if metadata.permissions().mode() & 0o100 != 0 {
-        Some("executable files")
+        Ok(Mode::Executable)
     } else {
-        None
+        Ok(Mode::File)
     }
 }

@@ -90,14 +90,26 @@ fn subdirectory_is_unsupported() {
 }
 
 #[test]
-fn executable_file_is_unsupported() {
+fn executable_files_match_git() {
     let tmp = TempDir::new().unwrap();
     let (repo, database) = repository(&tmp);
-    let path = repo.join("run.sh");
-    fs::write(&path, "#!/bin/sh\n").unwrap();
-    fs::set_permissions(&path, fs::Permissions::from_mode(0o755)).unwrap();
+    let files = [
+        ("plain.txt", 0o644),
+        ("run.sh", 0o755),
+        // Only the owner may execute: Git still counts it as executable
+        ("owner.sh", 0o744),
+        // Only the group may execute: Git does not count it as executable
+        ("group.sh", 0o654),
+    ];
+    for (name, mode) in files {
+        let path = repo.join(name);
+        fs::write(&path, "#!/bin/sh\n").unwrap();
+        fs::set_permissions(&path, fs::Permissions::from_mode(mode)).unwrap();
+    }
 
-    assert_unsupported(&repo, &database, &path, "executable files");
+    let ours = wik::snapshot(&repo, &database).unwrap();
+
+    assert_eq!(ours.to_string(), git_write_tree(&repo));
 }
 
 #[test]
