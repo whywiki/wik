@@ -15,6 +15,8 @@ pub enum Mode {
     File,
     /// Regular file that may be executed
     Executable,
+    /// Folder: the entry id is the id of another tree
+    Directory,
 }
 
 impl Mode {
@@ -23,6 +25,7 @@ impl Mode {
         match self {
             Self::File => "100644",
             Self::Executable => "100755",
+            Self::Directory => "40000",
         }
     }
 }
@@ -37,8 +40,20 @@ pub struct Entry {
     pub name: OsString,
     /// What kind of entry this is
     pub mode: Mode,
-    /// id of the blob holding the file content
+    /// id of the blob with the file content or of the tree with folder entries
     pub id: ObjectId,
+}
+
+impl Entry {
+    /// The name Git sorts by. Folders get `/` at the end.
+    fn sort_key(&self) -> Vec<u8> {
+        let mut key = self.name.as_bytes().to_vec();
+        if self.mode == Mode::Directory {
+            key.push(b'/');
+        }
+
+        key
+    }
 }
 
 /// Tree object: the entries of one directory.
@@ -52,8 +67,9 @@ pub struct Tree {
 
 impl Tree {
     /// Creates a tree from `entries` sorted by name the same way Git does
+    /// (name as bytes with `/` after each folders name)
     pub fn new(mut entries: Vec<Entry>) -> Self {
-        entries.sort_by(|a, b| a.name.as_bytes().cmp(b.name.as_bytes()));
+        entries.sort_by_cached_key(Entry::sort_key);
         Self { entries }
     }
 
@@ -96,6 +112,15 @@ mod tests {
         }
     }
 
+    /// An entry for a folder named `name` holding `tree`
+    fn folder(name: &str, tree: Tree) -> Entry {
+        Entry {
+            name: name.into(),
+            mode: Mode::Directory,
+            id: Object::Tree(tree).id(&Sha1Crate),
+        }
+    }
+
     #[test]
     fn entry_is_mode_name_zero_byte_and_raw_id() {
         let entry = file("hello.txt", b"hello world\n");
@@ -126,6 +151,36 @@ mod tests {
         assert_eq!(
             Object::Tree(tree).id(&Sha1Crate).to_string(),
             "5d4cc1b4fb07085da4f9ee62de8974ca78ccdac0"
+        );
+    }
+
+    #[test]
+    fn folders_sort_as_if_their_name_ended_with_a_slash() {
+        let tree = Tree::new(vec![
+            folder("notes", Tree::new(vec![file("todo.md", b"buy milk\n")])),
+            file("notes.txt", b"short note\n"),
+            file("notes-old", b"old note\n"),
+            file("notes2", b"second note\n"),
+        ]);
+
+        let names: Vec<_> = tree.entries.iter().map(|entry| &entry.name).collect();
+        // Same order as `git ls-tree` for these names.
+        assert_eq!(names, ["notes-old", "notes.txt", "notes", "notes2"]);
+    }
+
+    #[test]
+    fn tree_with_a_folder_matches_git() {
+        let tree = Tree::new(vec![
+            folder("notes", Tree::new(vec![file("todo.md", b"buy milk\n")])),
+            file("notes.txt", b"short note\n"),
+            file("notes-old", b"old note\n"),
+            file("notes2", b"second note\n"),
+        ]);
+
+        // `git write-tree` for a folder with exactly these files.
+        assert_eq!(
+            Object::Tree(tree).id(&Sha1Crate).to_string(),
+            "03483a8e0b1a417465f4d4d4679e5757591f5a51"
         );
     }
 }
