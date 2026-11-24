@@ -80,13 +80,44 @@ fn assert_unsupported(repo: &Path, database: &Database, path: &Path, kind: &str)
 }
 
 #[test]
-fn subdirectory_is_unsupported() {
+fn nested_folders_match_git() {
     let tmp = TempDir::new().unwrap();
     let (repo, database) = repository(&tmp);
-    let path = repo.join("src");
-    fs::create_dir(&path).unwrap();
+    fs::create_dir_all(repo.join("src/hash")).unwrap();
+    fs::write(repo.join("README.md"), "read me\n").unwrap();
+    fs::write(repo.join("src/main.rs"), "fn main() {}\n").unwrap();
+    fs::write(repo.join("src/hash/sha1.rs"), "pub fn hash() {}\n").unwrap();
+    fs::create_dir(repo.join("notes")).unwrap();
+    fs::write(repo.join("notes/todo.md"), "buy milk\n").unwrap();
+    fs::write(repo.join("notes.txt"), "short note\n").unwrap();
+    fs::write(repo.join("notes-old"), "old note\n").unwrap();
 
-    assert_unsupported(&repo, &database, &path, "subdirectories");
+    let ours = wik::snapshot(&repo, &database).unwrap();
+
+    assert_eq!(ours.to_string(), git_write_tree(&repo));
+    git(&repo, &["fsck", "--strict"]);
+}
+
+#[test]
+fn empty_folders_are_left_out_like_in_git() {
+    let tmp = TempDir::new().unwrap();
+    let (repo, database) = repository(&tmp);
+    fs::write(repo.join("README.md"), "read me\n").unwrap();
+    fs::create_dir_all(repo.join("empty/inside/too")).unwrap();
+
+    let ours = wik::snapshot(&repo, &database).unwrap();
+
+    assert_eq!(ours.to_string(), git_write_tree(&repo));
+}
+
+#[test]
+fn nested_repository_is_unsupported() {
+    let tmp = TempDir::new().unwrap();
+    let (repo, database) = repository(&tmp);
+    let inner = repo.join("vendor/lib");
+    wik::init(&inner).unwrap();
+
+    assert_unsupported(&repo, &database, &inner, "nested repositories");
 }
 
 #[test]
