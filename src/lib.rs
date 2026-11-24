@@ -5,6 +5,7 @@ mod error;
 mod hash;
 mod object;
 mod repository;
+mod tree_builder;
 mod workspace;
 
 pub use database::Database;
