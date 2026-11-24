@@ -144,11 +144,22 @@ fn executable_files_match_git() {
 }
 
 #[test]
-fn symbolic_link_is_unsupported() {
+fn symbolic_links_match_git() {
     let tmp = TempDir::new().unwrap();
     let (repo, database) = repository(&tmp);
-    let path = repo.join("link");
-    symlink("hello.txt", &path).unwrap();
+    fs::create_dir_all(repo.join("docs")).unwrap();
+    fs::create_dir_all(repo.join("src")).unwrap();
+    fs::write(repo.join("README.md"), "read me\n").unwrap();
+    fs::write(repo.join("src/main.rs"), "fn main() {}\n").unwrap();
+    // A link to a file
+    symlink("../README.md", repo.join("docs/README.md")).unwrap();
+    // A link to a folder: stored as a link not followed into
+    symlink("src", repo.join("code")).unwrap();
+    // A broken link: the target does not exist
+    symlink("missing.txt", repo.join("gone")).unwrap();
 
-    assert_unsupported(&repo, &database, &path, "symbolic links");
+    let ours = wik::snapshot(&repo, &database).unwrap();
+
+    assert_eq!(ours.to_string(), git_write_tree(&repo));
+    git(&repo, &["fsck", "--strict"]);
 }
