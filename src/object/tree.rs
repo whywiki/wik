@@ -17,6 +17,8 @@ pub enum Mode {
     Executable,
     /// Folder: the entry id is the id of another tree
     Directory,
+    /// A symbolic link: the entry id is a blob with the link target
+    Symlink,
 }
 
 impl Mode {
@@ -26,6 +28,7 @@ impl Mode {
             Self::File => "100644",
             Self::Executable => "100755",
             Self::Directory => "40000",
+            Self::Symlink => "120000",
         }
     }
 }

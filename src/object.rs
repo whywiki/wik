@@ -1,6 +1,7 @@
 //! Git objects and their on-disk byte format
 
 use std::fs;
+use std::os::unix::ffi::OsStringExt;
 use std::path::Path;
 
 use crate::error::IoResultExt;
@@ -53,6 +54,20 @@ impl Object {
     pub fn blob_from_file(path: &Path) -> Result<Self> {
         let content = fs::read(path).context("read", path)?;
         Ok(Self::Blob(content))
+    }
+
+    /// Reads the symbolic link at `path` to blob.
+    ///
+    /// Like Git the blob holds the link target path (for example
+    /// `../README.md`) not the content of the file it points to. The
+    /// target does not have to exist.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Fs`](crate::Error::Fs) if the link cannot be read
+    pub fn blob_from_link(path: &Path) -> Result<Self> {
+        let target = fs::read_link(path).context("read link", path)?;
+        Ok(Self::Blob(target.into_os_string().into_vec()))
     }
 }
 

@@ -14,13 +14,21 @@ use crate::{Database, Error, Mode, Object, ObjectId, Result};
 ///
 /// # Errors
 ///
-/// Returns [`Error::Unsupported`] for a
-/// a symbolic link or a special file, and [`Error::Fs`] if a file cannot
-/// be read or an object cannot be written.
+/// Returns [`Error::Unsupported`] for a special file or nested repository,
+/// and [`Error::Fs`] if a file cannot be read or an object cannot be written.
 pub fn snapshot(root: &Path, database: &Database) -> Result<ObjectId> {
     let mut files = Vec::new();
     for (path, mode) in list_files(root)? {
-        let id = database.store(&Object::blob_from_file(&root.join(&path))?)?;
+        let full_path = root.join(&path);
+
+        // link is stored as its target path so it is never followed
+        let blob = if mode == Mode::Symlink {
+            Object::blob_from_link(&full_path)?
+        } else {
+            Object::blob_from_file(&full_path)?
+        };
+
+        let id = database.store(&blob)?;
         files.push((path, mode, id));
     }
     store_tree(files, database)
@@ -87,7 +95,7 @@ fn file_mode(metadata: &fs::Metadata) -> Result<Mode, &'static str> {
     if file_type.is_dir() {
         Ok(Mode::Directory)
     } else if file_type.is_symlink() {
-        Err("symbolic links")
+        Ok(Mode::Symlink)
     } else if !file_type.is_file() {
         Err("special files")
     // Git treats a file as executable if its owner may execute it
