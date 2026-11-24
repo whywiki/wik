@@ -2,7 +2,7 @@
 
 use std::collections::BTreeMap;
 use std::ffi::OsString;
-use std::path::{self, Path, PathBuf};
+use std::path::{Path, PathBuf};
 
 use crate::{Database, Entry, Mode, Object, ObjectId, Result, Tree};
 
