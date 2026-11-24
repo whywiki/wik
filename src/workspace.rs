@@ -98,8 +98,8 @@ fn file_mode(metadata: &fs::Metadata) -> Result<Mode, &'static str> {
         Ok(Mode::Symlink)
     } else if !file_type.is_file() {
         Err("special files")
-    // Git treats a file as executable if its owner may execute it
     } else if metadata.permissions().mode() & 0o100 != 0 {
+        // Git treats a file as executable if its owner may execute it
         Ok(Mode::Executable)
     } else {
         Ok(Mode::File)

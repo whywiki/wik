@@ -45,8 +45,8 @@ pub(crate) fn store_tree(
 }
 
 impl Folder {
-    /// Puts file into the right subfolder. Missing folders are created and
-    /// stored in [Folder].
+    /// Puts the file into the right subfolder. Missing subfolders are
+    /// created (in memory only).
     ///
     /// For example, `src/hash/sha1.rs` goes into the folder `src` then into
     /// `hash`, and `sha1.rs` is added.
