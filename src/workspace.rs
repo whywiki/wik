@@ -39,7 +39,7 @@ fn list_files(root: &Path) -> Result<Vec<(PathBuf, Mode)>> {
 ///
 /// For each subfolder it calls itself so files in subfolders are added
 /// too. `folder` is relative to `root` and empty for `root` itself.
-fn list_folder(root: &Path, folder: &Path, files: &mut Vec<(PathBuf, Move)>) -> Result<()> {
+fn list_folder(root: &Path, folder: &Path, files: &mut Vec<(PathBuf, Mode)>) -> Result<()> {
     let dir = root.join(folder);
 
     for entry in fs::read_dir(&dir).context("read", &dir)? {
