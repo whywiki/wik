@@ -32,6 +32,12 @@ pub enum Error {
         /// What kind of file it is
         what: &'static str,
     },
+
+    /// Wrong object id name
+    InvalidObjectName {
+        /// Given name
+        name: String,
+    },
 }
 
 /// `wik::Result<T>` is short for `Result<T, wik::Error>`
@@ -58,6 +64,9 @@ impl fmt::Display for Error {
                     "cannot store {}: {what} are not supported yet",
                     path.display()
                 )
+            }
+            Self::InvalidObjectName { name } => {
+                write!(f, "not a valid object name {name}")
             }
         }
     }
