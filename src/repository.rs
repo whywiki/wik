@@ -8,7 +8,7 @@ use crate::error::IoResultExt;
 use crate::{Error, Result};
 
 /// Name of the directory that holds git data
-const GIT_DIR: &str = ".git";
+pub(crate) const GIT_DIR: &str = ".git";
 
 /// Branch that `HEAD` points to in new repository
 const DEFAULT_BRANCH: &str = "main";

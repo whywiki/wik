@@ -1,10 +1,17 @@
 //! Git objects and their on-disk byte format
 
 use std::fs;
+use std::os::unix::ffi::OsStringExt;
 use std::path::Path;
 
 use crate::error::IoResultExt;
-use crate::{HashAlgorithm, ObjectId, Result};
+use crate::{HashAlgorithm, Result};
+
+mod id;
+mod tree;
+
+pub use id::ObjectId;
+pub use tree::{Entry, Mode, Tree};
 
 /// Object that can be stored in the repository.
 ///
@@ -13,6 +20,8 @@ use crate::{HashAlgorithm, ObjectId, Result};
 pub enum Object {
     /// The contents of one file
     Blob(Vec<u8>),
+    /// The list of entries of one directory
+    Tree(Tree),
 }
 
 impl Object {
@@ -21,6 +30,8 @@ impl Object {
     pub fn serialize(&self) -> Vec<u8> {
         let (kind, content): (&str, &[u8]) = match self {
             Self::Blob(data) => ("blob", data),
+            // new Vec lives as long as content (temp lifetime extension)
+            Self::Tree(tree) => ("tree", &tree.to_bytes()),
         };
 
         // header
@@ -43,6 +54,20 @@ impl Object {
     pub fn blob_from_file(path: &Path) -> Result<Self> {
         let content = fs::read(path).context("read", path)?;
         Ok(Self::Blob(content))
+    }
+
+    /// Reads the symbolic link at `path` to blob.
+    ///
+    /// Like Git the blob holds the link target path (for example
+    /// `../README.md`) not the content of the file it points to. The
+    /// target does not have to exist.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Fs`](crate::Error::Fs) if the link cannot be read
+    pub fn blob_from_link(path: &Path) -> Result<Self> {
+        let target = fs::read_link(path).context("read link", path)?;
+        Ok(Self::Blob(target.into_os_string().into_vec()))
     }
 }
 
