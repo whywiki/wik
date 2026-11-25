@@ -38,6 +38,18 @@ pub enum Error {
         /// Given name
         name: String,
     },
+
+    /// Environment variable needed for a commit is not set or empty
+    MissingVariable {
+        /// variable for example `GIT_AUTHOR_NAME`
+        name: &'static str,
+    },
+
+    /// Date is not in Git format `<seconds> <+hhmm>`
+    InvalidDate {
+        /// The date it was given
+        date: String,
+    },
 }
 
 /// `wik::Result<T>` is short for `Result<T, wik::Error>`
@@ -67,6 +79,10 @@ impl fmt::Display for Error {
             }
             Self::InvalidObjectName { name } => {
                 write!(f, "not a valid object name {name}")
+            }
+            Self::MissingVariable { name } => write!(f, "{name} is not set"),
+            Self::InvalidDate { date } => {
+                write!(f, "invalid date {date:?}: expected `<seconds> <+hhmm>`")
             }
         }
     }
