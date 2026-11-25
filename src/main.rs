@@ -48,7 +48,7 @@ enum Command {
         #[arg(required = true)]
         paths: Vec<PathBuf>,
     },
-    ///  create a commit object from a tree and print its id
+    /// Create a commit object from a tree and print its id
     CommitTree {
         /// The id of the tree to commit
         tree: ObjectId,

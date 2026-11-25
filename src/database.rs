@@ -41,7 +41,7 @@ impl Database {
 
     /// Where the object with this id is stored:
     /// - folder - `objects/<first 2 hex chars>`
-    /// - file - `object/<...>/<other 38 hex chars>`
+    /// - file - `objects/<...>/<other 38 hex chars>`
     fn object_location(&self, id: ObjectId) -> (PathBuf, PathBuf) {
         let hex = id.to_string();
 

@@ -25,7 +25,7 @@ fn repository(tmp: &TempDir) -> PathBuf {
     repo
 }
 
-/// Is the object `hex` is stored in `repo`
+/// Is the object `hex` stored in `repo`
 fn stored(repo: &Path, hex: &str) -> bool {
     let (dir, file) = hex.split_at(2);
     repo.join(".git/objects").join(dir).join(file).is_file()

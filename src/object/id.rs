@@ -36,7 +36,7 @@ impl fmt::Display for ObjectId {
 impl FromStr for ObjectId {
     type Err = Error;
 
-    /// Reads an Git id written as hex
+    /// Reads a Git id written as hex
     ///
     /// It must be full id: 40 hex characters for SHA-1. Uppercase and
     /// lowercase letters are both accepted like in Git.

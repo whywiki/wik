@@ -89,7 +89,7 @@ pub fn author_and_committer(
     Ok((author, committer))
 }
 
-/// Lookup value of the varaible `name`. If not set it gives `None`.
+/// Lookup value of the variable `name`. If not set it gives `None`.
 /// An empty value counts as not set
 fn lookup(var: &impl Fn(&str) -> Option<String>, name: &str) -> Option<String> {
     let value = var(name)?;

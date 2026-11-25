@@ -7,7 +7,7 @@ use std::process::Command;
 /// succeeded and returns what it printed to stdout.
 ///
 /// It ignores the user and system config and it never searches for a repo
-/// above `dir` and it uses [IDENTITY] as author and commiter.
+/// above `dir` and it uses [`IDENTITY`] as author and committer.
 pub fn git(dir: &Path, args: &[&str]) -> String {
     git_with_ceiling(dir, args, dir.parent().unwrap_or(dir))
 }
