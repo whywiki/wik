@@ -9,7 +9,7 @@ use flate2::Compression;
 use flate2::write::ZlibEncoder;
 
 use crate::error::IoResultExt;
-use crate::{HashAlgorithm, Object, ObjectId, Result};
+use crate::{Commit, Error, HashAlgorithm, Object, ObjectId, Result};
 
 /// Object database of one repository (`.git/objects`).
 ///
@@ -100,6 +100,30 @@ impl Database {
             // Other error
             Err(err) => Err(err.error).context("write", &path),
         }
+    }
+
+    /// Stores `commit` and returns its id.
+    ///
+    /// The commit tree and parents must already be in the database.
+    /// For now this only checks that they exist not that the tree is
+    /// really a tree and the parents are really commits.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::MissingObject`] if the tree or a parent is not in
+    /// the database and [`Error::Fs`] if the commit cannot be written.
+    pub fn store_commit(&self, commit: Commit) -> Result<ObjectId> {
+        // The tree and every parent must already be stored
+        if !self.contains(commit.tree) {
+            return Err(Error::MissingObject { id: commit.tree });
+        }
+        for &parent in &commit.parents {
+            if !self.contains(parent) {
+                return Err(Error::MissingObject { id: parent });
+            }
+        }
+
+        self.store(&Object::Commit(commit))
     }
 }
 
