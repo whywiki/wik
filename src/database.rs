@@ -9,7 +9,7 @@ use flate2::Compression;
 use flate2::write::ZlibEncoder;
 
 use crate::error::IoResultExt;
-use crate::{HashAlgorithm, Object, ObjectId, Result};
+use crate::{Commit, Error, HashAlgorithm, Object, ObjectId, Result};
 
 /// Object database of one repository (`.git/objects`).
 ///
@@ -32,6 +32,26 @@ impl Database {
         }
     }
 
+    /// Checks if object with this id is in database
+    pub fn contains(&self, id: ObjectId) -> bool {
+        let (_, path) = self.object_location(id);
+
+        path.exists()
+    }
+
+    /// Where the object with this id is stored:
+    /// - folder - `objects/<first 2 hex chars>`
+    /// - file - `objects/<...>/<other 38 hex chars>`
+    fn object_location(&self, id: ObjectId) -> (PathBuf, PathBuf) {
+        let hex = id.to_string();
+
+        let (dir_name, file_name) = hex.split_at(2);
+        let dir = self.objects_dir.join(dir_name);
+        let path = dir.join(file_name);
+
+        (dir, path)
+    }
+
     /// Stores `object` as loose object and returns its id
     ///
     /// The object is compressed with zlib and written to
@@ -49,10 +69,7 @@ impl Database {
         let id = self.hasher.hash(&content);
 
         // 2. Path from the id: `objects/<first 2 hex chars>/<other 38>`
-        let hex = id.to_string();
-        let (dir_name, file_name) = hex.split_at(2);
-        let dir = self.objects_dir.join(dir_name);
-        let path = dir.join(file_name);
+        let (dir, path) = self.object_location(id);
 
         // 3. Same id == same content. No need to write again
         if path.exists() {
@@ -83,6 +100,30 @@ impl Database {
             // Other error
             Err(err) => Err(err.error).context("write", &path),
         }
+    }
+
+    /// Stores `commit` and returns its id.
+    ///
+    /// The commit tree and parents must already be in the database.
+    /// For now this only checks that they exist not that the tree is
+    /// really a tree and the parents are really commits.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::MissingObject`] if the tree or a parent is not in
+    /// the database and [`Error::Fs`] if the commit cannot be written.
+    pub fn store_commit(&self, commit: Commit) -> Result<ObjectId> {
+        // The tree and every parent must already be stored
+        if !self.contains(commit.tree) {
+            return Err(Error::MissingObject { id: commit.tree });
+        }
+        for &parent in &commit.parents {
+            if !self.contains(parent) {
+                return Err(Error::MissingObject { id: parent });
+            }
+        }
+
+        self.store(&Object::Commit(commit))
     }
 }
 

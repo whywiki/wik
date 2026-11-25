@@ -7,9 +7,11 @@ use std::path::Path;
 use crate::error::IoResultExt;
 use crate::{HashAlgorithm, Result};
 
+mod commit;
 mod id;
 mod tree;
 
+pub use commit::{Commit, Signature};
 pub use id::ObjectId;
 pub use tree::{Entry, Mode, Tree};
 
@@ -22,6 +24,8 @@ pub enum Object {
     Blob(Vec<u8>),
     /// The list of entries of one directory
     Tree(Tree),
+    /// A snapshot of the files with its history and a message
+    Commit(Commit),
 }
 
 impl Object {
@@ -32,6 +36,7 @@ impl Object {
             Self::Blob(data) => ("blob", data),
             // new Vec lives as long as content (temp lifetime extension)
             Self::Tree(tree) => ("tree", &tree.to_bytes()),
+            Self::Commit(commit) => ("commit", &commit.to_bytes()),
         };
 
         // header

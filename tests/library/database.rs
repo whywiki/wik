@@ -83,3 +83,19 @@ fn objects_are_read_only_like_gits() {
     let mode = fs::metadata(path).unwrap().permissions().mode();
     assert_eq!(mode & 0o777, 0o444);
 }
+
+#[test]
+fn contains_only_stored_objects() {
+    let tmp = TempDir::new().unwrap();
+    let repo = tmp.path().join("repo");
+    wik::init(&repo).unwrap();
+    let database = Database::new(&repo.join(".git"), Box::new(Sha1Crate));
+
+    let stored = database
+        .store(&Object::Blob(b"hello world\n".to_vec()))
+        .unwrap();
+    let not_stored = Object::Blob(b"never stored\n".to_vec()).id(&Sha1Crate);
+
+    assert!(database.contains(stored));
+    assert!(!database.contains(not_stored));
+}

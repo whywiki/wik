@@ -4,6 +4,8 @@ use std::fmt;
 use std::io;
 use std::path::{Path, PathBuf};
 
+use crate::ObjectId;
+
 /// `wik::Error` is shared wik error type
 #[derive(Debug)]
 pub enum Error {
@@ -32,6 +34,30 @@ pub enum Error {
         /// What kind of file it is
         what: &'static str,
     },
+
+    /// Wrong object id name
+    InvalidObjectName {
+        /// Given name
+        name: String,
+    },
+
+    /// Environment variable needed for a commit is not set or empty
+    MissingVariable {
+        /// variable for example `GIT_AUTHOR_NAME`
+        name: &'static str,
+    },
+
+    /// Date is not in Git format `<seconds> <+hhmm>`
+    InvalidDate {
+        /// The date it was given
+        date: String,
+    },
+
+    /// Object that should be in the repository isn't there
+    MissingObject {
+        /// id of the missing object
+        id: ObjectId,
+    },
 }
 
 /// `wik::Result<T>` is short for `Result<T, wik::Error>`
@@ -59,6 +85,14 @@ impl fmt::Display for Error {
                     path.display()
                 )
             }
+            Self::InvalidObjectName { name } => {
+                write!(f, "not a valid object name {name}")
+            }
+            Self::MissingVariable { name } => write!(f, "{name} is not set"),
+            Self::InvalidDate { date } => {
+                write!(f, "invalid date {date:?}: expected `<seconds> <+hhmm>`")
+            }
+            Self::MissingObject { id } => write!(f, "{id} is not a valid object"),
         }
     }
 }
