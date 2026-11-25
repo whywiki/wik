@@ -22,6 +22,7 @@ pub const IDENTITY: [(&str, &str); 6] = [
 pub fn wik_command(dir: &Path, args: &[&str]) -> Command {
     let mut command = Command::new(env!("CARGO_BIN_EXE_wik"));
     command.args(args).current_dir(dir).envs(IDENTITY);
+
     command
 }
 
@@ -41,12 +42,14 @@ pub fn wik_with_input(dir: &Path, args: &[&str], input: &[u8]) -> Output {
         .stderr(Stdio::piped())
         .spawn()
         .expect("failed to start wik");
+
     child
         .stdin
         .take()
         .expect("stdin is piped")
         .write_all(input)
         .expect("failed to write to wik");
+
     child.wait_with_output().expect("failed to wait for wik")
 }
 
