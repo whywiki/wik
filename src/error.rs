@@ -64,6 +64,14 @@ pub enum Error {
         /// `.lock` file
         path: PathBuf,
     },
+    /// Ref holds something that is not an id or `HEAD` points outside `refs/`
+    BrokenRef {
+        /// ref like `refs/heads/main` or `HEAD`
+        name: String,
+    },
+
+    /// Repository keeps its refs in Git newer (3.0) reftable format
+    ReftableNotSupported,
 }
 
 /// `wik::Result<T>` is short for `Result<T, wik::Error>`
@@ -104,6 +112,12 @@ impl fmt::Display for Error {
                 "unable to create '{}': File exists. If no other wik or git \
                  is running, delete this file",
                 path.display()
+            ),
+            Self::BrokenRef { name } => write!(f, "{name} is a broken ref"),
+            Self::ReftableNotSupported => write!(
+                f,
+                "this repository keeps its refs in the reftable format \
+                 which wik does not support"
             ),
         }
     }
