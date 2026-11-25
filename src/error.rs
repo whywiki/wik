@@ -58,6 +58,12 @@ pub enum Error {
         /// id of the missing object
         id: ObjectId,
     },
+
+    /// File is locked (its `.lock` file already exists)
+    LockHeld {
+        /// `.lock` file
+        path: PathBuf,
+    },
 }
 
 /// `wik::Result<T>` is short for `Result<T, wik::Error>`
@@ -93,6 +99,12 @@ impl fmt::Display for Error {
                 write!(f, "invalid date {date:?}: expected `<seconds> <+hhmm>`")
             }
             Self::MissingObject { id } => write!(f, "{id} is not a valid object"),
+            Self::LockHeld { path } => write!(
+                f,
+                "unable to create '{}': File exists. If no other wik or git \
+                 is running, delete this file",
+                path.display()
+            ),
         }
     }
 }
