@@ -1,11 +1,12 @@
 //! CLI for wik. All logic lives in the lib.rs
 
 use std::env;
+use std::io::{self, Read};
 use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand, ValueEnum};
-use wik::{Database, HashAlgorithm, InitOutcome, Object, Sha1Crate, Sha1Own};
+use wik::{Commit, Database, HashAlgorithm, InitOutcome, Object, ObjectId, Sha1Crate, Sha1Own};
 
 /// wik: git compatible Version Control System
 #[derive(Parser)]
@@ -46,6 +47,19 @@ enum Command {
         /// Files to hash
         #[arg(required = true)]
         paths: Vec<PathBuf>,
+    },
+    ///  create a commit object from a tree and print its id
+    CommitTree {
+        /// The id of the tree to commit
+        tree: ObjectId,
+
+        /// The id of a parent commit (can be given more than once)
+        #[arg(short = 'p')]
+        parents: Vec<ObjectId>,
+
+        /// The commit message. Without it the message is read from stdin
+        #[arg(short = 'm')]
+        message: Option<String>,
     },
 }
 
@@ -94,6 +108,35 @@ fn run(cli: Cli) -> wik::Result<()> {
                     println!("{id}");
                 }
             }
+        }
+        Command::CommitTree {
+            tree,
+            parents,
+            message,
+        } => {
+            let git_dir = wik::find_git_dir(&env::current_dir()?)?;
+            let database = Database::new(&git_dir, hasher);
+
+            // Like Git `-m` gets a newline at the end and stdin is used as it is
+            let message = match message {
+                Some(text) => format!("{text}\n"),
+                None => {
+                    let mut text = String::new();
+                    io::stdin().read_to_string(&mut text)?;
+                    text
+                }
+            };
+
+            let (author, committer) =
+                wik::author_and_committer(|name| env::var(name).ok(), wik::now())?;
+            let commit = Commit {
+                tree,
+                parents,
+                author,
+                committer,
+                message,
+            };
+            println!("{}", database.store_commit(commit)?);
         }
     }
     Ok(())
