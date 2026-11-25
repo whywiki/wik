@@ -32,6 +32,26 @@ impl Database {
         }
     }
 
+    /// Checks if object with this id is in database
+    pub fn contains(&self, id: ObjectId) -> bool {
+        let (_, path) = self.object_location(id);
+
+        path.exists()
+    }
+
+    /// Where the object with this id is stored:
+    /// - folder - `objects/<first 2 hex chars>`
+    /// - file - `object/<...>/<other 38 hex chars>`
+    fn object_location(&self, id: ObjectId) -> (PathBuf, PathBuf) {
+        let hex = id.to_string();
+
+        let (dir_name, file_name) = hex.split_at(2);
+        let dir = self.objects_dir.join(dir_name);
+        let path = dir.join(file_name);
+
+        (dir, path)
+    }
+
     /// Stores `object` as loose object and returns its id
     ///
     /// The object is compressed with zlib and written to
@@ -49,10 +69,7 @@ impl Database {
         let id = self.hasher.hash(&content);
 
         // 2. Path from the id: `objects/<first 2 hex chars>/<other 38>`
-        let hex = id.to_string();
-        let (dir_name, file_name) = hex.split_at(2);
-        let dir = self.objects_dir.join(dir_name);
-        let path = dir.join(file_name);
+        let (dir, path) = self.object_location(id);
 
         // 3. Same id == same content. No need to write again
         if path.exists() {
