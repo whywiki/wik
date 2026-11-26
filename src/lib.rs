@@ -1,5 +1,6 @@
 //! wik: git compatible Version Control System
 
+mod commit;
 mod database;
 mod error;
 mod hash;
@@ -11,6 +12,7 @@ mod repository;
 mod tree_builder;
 mod workspace;
 
+pub use commit::{CommitOutcome, commit};
 pub use database::Database;
 pub use error::{Error, Result};
 pub use hash::{HashAlgorithm, Sha1Crate, Sha1Own};
