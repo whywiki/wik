@@ -6,7 +6,10 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand, ValueEnum};
-use wik::{Commit, Database, HashAlgorithm, InitOutcome, Object, ObjectId, Sha1Crate, Sha1Own};
+use wik::{
+    Commit, CommitOutcome, Database, Error, HashAlgorithm, Head, InitOutcome, Object, ObjectId,
+    Sha1Crate, Sha1Own, author_and_committer,
+};
 
 /// wik: git compatible Version Control System
 #[derive(Parser)]
@@ -60,6 +63,12 @@ enum Command {
         /// The commit message. Without it the message is read from stdin
         #[arg(short = 'm')]
         message: Option<String>,
+    },
+    /// Record all files of the working folder as a new commit
+    Commit {
+        /// The commit message
+        #[arg(short = 'm')]
+        message: String,
     },
 }
 
@@ -138,6 +147,54 @@ fn run(cli: Cli) -> wik::Result<()> {
             };
             println!("{}", database.store_commit(commit)?);
         }
+        Command::Commit { message } => {
+            let git_dir = wik::find_git_dir(&env::current_dir()?)?;
+
+            // in practice else never runs
+            let Some(root) = git_dir.parent() else {
+                return Err(Error::NotARepository);
+            };
+
+            let database = Database::new(&git_dir, hasher);
+
+            let (author, committer) = author_and_committer(|name| env::var(name).ok(), wik::now())?;
+
+            let outcome = wik::commit(
+                root,
+                &git_dir,
+                &database,
+                author,
+                committer,
+                format!("{message\n}"),
+            )?;
+
+            println!("{}", summary(&outcome, &message));
+        }
     }
     Ok(())
+}
+
+/// Line Git prints after commit like
+/// `[main (root-commit) 9du67sa] first commit`
+fn summary(outcome: &CommitOutcome, message: &str) -> String {
+    let place = match &outcome.head {
+        Head::Branch(name) => name.strip_prefix("refs/heads/").unwrap_or(name),
+        Head::Detached => "detached HEAD",
+    };
+    let root = if outcome.root { " (root-commit)" } else { "" };
+    let id = outcome.id.to_string();
+    let short_id = &id[..7];
+
+    let mut subject = Vec::new();
+    for line in message.lines() {
+        if line.trim().is_empty() {
+            if subject.is_empty() {
+                continue;
+            }
+            break;
+        }
+        subject.push(line);
+    }
+
+    format!("[{place}{root} {short_id}] {}", subject.join(" "))
 }
