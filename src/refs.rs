@@ -11,7 +11,7 @@ use std::io;
 use std::path::{Path, PathBuf};
 
 use crate::error::IoResultExt;
-use crate::{Error, ObjectId, Result};
+use crate::{Error, Lockfile, ObjectId, Result};
 
 /// What `HEAD` points to.
 #[derive(Debug, PartialEq, Eq)]
@@ -126,6 +126,32 @@ impl Refs {
             }
         }
         Ok(None)
+    }
+
+    /// Moves the ref `name` to `new` but only if it still points to
+    /// `expected`. `None` means it must not exist yet.
+    ///
+    /// The new id is always written to the loose file. If the ref is also
+    /// in `packed-refs` that old line stays and the loose file wins.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::RefChanged`] if the ref no longer points to
+    /// `expected` [`Error::LockHeld`] if someone else is changing it right
+    /// now and [`Error::Fs`] if a file cannot be read or written.
+    pub fn update_ref(&self, name: &str, new: ObjectId, expected: Option<ObjectId>) -> Result<()> {
+        let path = self.git_dir.join(name);
+        let mut lock = Lockfile::acquire(&path)?;
+
+        // Someone may have moved the ref after the caller read it
+        if self.read_ref(name)? != expected {
+            return Err(Error::RefChanged {
+                name: name.to_string(),
+            });
+        }
+
+        lock.write(format!("{new}\n").as_bytes())?;
+        lock.commit()
     }
 }
 
