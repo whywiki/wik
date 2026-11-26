@@ -66,6 +66,71 @@ fn reads_loose_and_packed_refs() {
 }
 
 #[test]
+fn updates_are_seen_by_git() {
+    let tmp = TempDir::new().unwrap();
+    let (repo, refs) = repository(&tmp);
+    let one = commit(&repo, "one\n");
+    let two = commit(&repo, "two\n");
+
+    refs.update_ref(MAIN, one, None).unwrap();
+    assert_eq!(git(&repo, &["rev-parse", "main"]), format!("{one}\n"));
+
+    // After `pack-refs` the new id goes into a loose file again and it
+    // wins over the old line in `packed-refs`.
+    git(&repo, &["pack-refs", "--all"]);
+    refs.update_ref(MAIN, two, Some(one)).unwrap();
+    assert!(repo.join(".git/refs/heads/main").is_file());
+    assert_eq!(git(&repo, &["rev-parse", "main"]), format!("{two}\n"));
+
+    git(&repo, &["fsck", "--strict"]);
+}
+
+#[test]
+fn update_is_refused_if_someone_else_moved_the_ref() {
+    let tmp = TempDir::new().unwrap();
+    let (repo, refs) = repository(&tmp);
+    let one = commit(&repo, "one\n");
+    let two = commit(&repo, "two\n");
+    let three = commit(&repo, "three\n");
+    refs.update_ref(MAIN, one, None).unwrap();
+
+    // We read main then someone else moves it before we update it
+    let seen = refs.read_ref(MAIN).unwrap();
+    git(&repo, &["update-ref", MAIN, &two.to_string()]);
+    let result = refs.update_ref(MAIN, three, seen);
+
+    assert!(matches!(result, Err(Error::RefChanged { name }) if name == MAIN));
+    assert_eq!(git(&repo, &["rev-parse", "main"]), format!("{two}\n"));
+    assert!(!repo.join(".git/refs/heads/main.lock").exists());
+}
+
+#[test]
+fn detached_head_is_moved_itself() {
+    let tmp = TempDir::new().unwrap();
+    let (repo, refs) = repository(&tmp);
+    let one = commit(&repo, "one\n");
+    let two = commit(&repo, "two\n");
+
+    // `--no-deref` writes the id into HEAD itself and not into main
+    git(
+        &repo,
+        &["update-ref", "--no-deref", "HEAD", &one.to_string()],
+    );
+    let head = refs.read_head().unwrap();
+    assert_eq!(head, Head::Detached);
+    assert_eq!(refs.read_ref(head.ref_name()).unwrap(), Some(one));
+
+    refs.update_ref(head.ref_name(), two, Some(one)).unwrap();
+
+    assert_eq!(git(&repo, &["rev-parse", "HEAD"]), format!("{two}\n"));
+    assert_eq!(
+        fs::read_to_string(repo.join(".git/HEAD")).unwrap(),
+        format!("{two}\n")
+    );
+    assert_eq!(refs.read_ref(MAIN).unwrap(), None);
+}
+
+#[test]
 fn broken_refs_are_errors() {
     let tmp = TempDir::new().unwrap();
     let (repo, refs) = repository(&tmp);
