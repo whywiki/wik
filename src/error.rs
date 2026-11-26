@@ -72,6 +72,12 @@ pub enum Error {
 
     /// Repository keeps its refs in Git newer (3.0) reftable format
     ReftableNotSupported,
+
+    /// Something else moved ref while we were changing it
+    RefChanged {
+        /// The ref like `refs/heads/main`
+        name: String,
+    },
 }
 
 /// `wik::Result<T>` is short for `Result<T, wik::Error>`
@@ -119,6 +125,9 @@ impl fmt::Display for Error {
                 "this repository keeps its refs in the reftable format \
                  which wik does not support"
             ),
+            Self::RefChanged { name } => {
+                write!(f, "cannot update {name}: something else changed it")
+            }
         }
     }
 }
