@@ -64,6 +64,7 @@ pub enum Error {
         /// `.lock` file
         path: PathBuf,
     },
+
     /// Ref holds something that is not an id or `HEAD` points outside `refs/`
     BrokenRef {
         /// ref like `refs/heads/main` or `HEAD`
@@ -78,6 +79,9 @@ pub enum Error {
         /// The ref like `refs/heads/main`
         name: String,
     },
+
+    /// The commit message is empty
+    EmptyMessage,
 }
 
 /// `wik::Result<T>` is short for `Result<T, wik::Error>`
@@ -127,6 +131,9 @@ impl fmt::Display for Error {
             ),
             Self::RefChanged { name } => {
                 write!(f, "cannot update {name}: something else changed it")
+            }
+            Self::EmptyMessage => {
+                write!(f, "Aborting commit due to empty commit message.")
             }
         }
     }
