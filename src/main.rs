@@ -165,7 +165,7 @@ fn run(cli: Cli) -> wik::Result<()> {
                 &database,
                 author,
                 committer,
-                format!("{message\n}"),
+                format!("{message}\n"),
             )?;
 
             println!("{}", summary(&outcome, &message));
